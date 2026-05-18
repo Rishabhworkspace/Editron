@@ -452,7 +452,6 @@ const WebContainerPreview = ({
           );
         }
 
-        // @ts-ignore
         const files = transformToWebContainerFormat(templateData);
         setLoadingState((prev) => ({
           ...prev,
