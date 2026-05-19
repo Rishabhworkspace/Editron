@@ -14,6 +14,24 @@ interface WebContainerDirectory {
 
 export type WebContainerFileSystem = Record<string, WebContainerFile | WebContainerDirectory>;
 
+/**
+ * Determine the filesystem key for a TemplateItem.
+ *
+ * Folders are identified by the presence of both `folderName` and `items`.
+ * Everything else is treated as a file — including extension-less files such
+ * as `README` or `Makefile` where `fileExtension` is an empty string.
+ */
+function itemKey(item: TemplateItem): string {
+  if ('folderName' in item && 'items' in item) {
+    return (item as TemplateFolder).folderName;
+  }
+  // File: append the extension only when it is a non-empty string.
+  const file = item as TemplateFile;
+  return file.fileExtension
+    ? `${file.filename}.${file.fileExtension}`
+    : file.filename;
+}
+
 export function transformToWebContainerFormat(template: TemplateFolder): WebContainerFileSystem {
   function processItem(item: TemplateItem): WebContainerFile | WebContainerDirectory {
     if ('folderName' in item && 'items' in item) {
@@ -21,10 +39,7 @@ export function transformToWebContainerFormat(template: TemplateFolder): WebCont
       const directoryContents: WebContainerFileSystem = {};
       
       item.items.forEach(subItem => {
-        const key = 'fileExtension' in subItem && subItem.fileExtension
-          ? `${subItem.filename}.${subItem.fileExtension}`
-          : (subItem as TemplateFolder).folderName;
-        directoryContents[key] = processItem(subItem);
+        directoryContents[itemKey(subItem)] = processItem(subItem);
       });
 
       return {
@@ -44,10 +59,7 @@ export function transformToWebContainerFormat(template: TemplateFolder): WebCont
   const result: WebContainerFileSystem = {};
   
   template.items.forEach(item => {
-    const key = 'fileExtension' in item && item.fileExtension 
-      ? `${item.filename}.${item.fileExtension}`
-      : (item as TemplateFolder).folderName;
-    result[key] = processItem(item);
+    result[itemKey(item)] = processItem(item);
   });
 
   return result;
