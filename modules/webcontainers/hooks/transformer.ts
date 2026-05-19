@@ -21,9 +21,9 @@ export function transformToWebContainerFormat(template: TemplateFolder): WebCont
       const directoryContents: WebContainerFileSystem = {};
       
       item.items.forEach(subItem => {
-        const key = 'fileExtension' in subItem 
-          ? `${subItem.filename}.${subItem.fileExtension}`
-          : subItem.folderName;
+        const key = 'folderName' in subItem 
+          ? subItem.folderName
+          : subItem.fileExtension ? `${subItem.filename}.${subItem.fileExtension}` : subItem.filename;
         directoryContents[key] = processItem(subItem);
       });
 
@@ -43,9 +43,9 @@ export function transformToWebContainerFormat(template: TemplateFolder): WebCont
   const result: WebContainerFileSystem = {};
   
   template.items.forEach(item => {
-    const key = 'fileExtension' in item 
-      ? `${item.filename}.${item.fileExtension}`
-      : item.folderName;
+    const key = 'folderName' in item 
+      ? item.folderName
+      : item.fileExtension ? `${item.filename}.${item.fileExtension}` : item.filename;
     result[key] = processItem(item);
   });
 

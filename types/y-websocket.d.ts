@@ -1,6 +1,6 @@
 declare module 'y-websocket/bin/utils' {
   import { Doc } from 'yjs';
-  import { WebSocket } from 'ws';
+  import WebSocket from 'ws';
   import { IncomingMessage } from 'http';
 
   export function setupWSConnection(

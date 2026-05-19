@@ -1,4 +1,5 @@
-import NextAuth, { type User, type Account, type Session } from "next-auth"
+import NextAuth from "next-auth"
+import type { User, Account, Session } from "next-auth"
 import type { JWT } from "next-auth/jwt"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 
@@ -15,8 +16,10 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
     /**
      * Handle user creation and account linking after a successful sign-in
      */
-    async signIn({ user, account }: { user: User | any, account: Account | null | any }) {
+    async signIn({ user, account }: { user: User, account: Account | null | undefined }) {
       if (!user || !account) return false;
+
+      const sessionState = account && typeof account.session_state === 'string' ? account.session_state : undefined;
 
       // Check if the user already exists
       const existingUser = await db.user.findUnique({
@@ -42,7 +45,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
                 tokenType: account.token_type,
                 scope: account.scope,
                 idToken: account.id_token,
-                sessionState: account.session_state as string | undefined,
+                sessionState,
               },
             },
           },
@@ -74,7 +77,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
               tokenType: account.token_type,
               scope: account.scope,
               idToken: account.id_token,
-              sessionState: account.session_state as string | undefined,
+              sessionState,
             },
           });
         } else {
@@ -87,7 +90,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
               expiresAt: account.expires_at,
               scope: account.scope,
               idToken: account.id_token,
-              sessionState: account.session_state as string | undefined,
+              sessionState,
             }
           });
         }
@@ -96,7 +99,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
       return true;
     },
 
-    async jwt({ token, user: _user, account: _account }: { token: JWT | any, user: User | any, account: Account | null | any }) {
+    async jwt({ token, user: _user, account: _account }: { token: JWT, user?: User, account?: Account | null }) {
       if (!token.sub) return token;
 
       // Optimization: If token already has role and picture, skip DB call
@@ -117,7 +120,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
       return token;
     },
 
-    async session({ session, token }: { session: Session | any, token: JWT | any }) {
+    async session({ session, token }: { session: Session, token: JWT }) {
       // Attach the user ID from the token to the session
       if (token.sub && session.user) {
         session.user.id = token.sub
