@@ -1,4 +1,5 @@
-import NextAuth from "next-auth"
+import NextAuth, { type User, type Account, type Session } from "next-auth"
+import type { JWT } from "next-auth/jwt"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 
 import authConfig from "./auth.config"
@@ -14,7 +15,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
     /**
      * Handle user creation and account linking after a successful sign-in
      */
-    async signIn({ user, account }) {
+    async signIn({ user, account }: { user: User | any, account: Account | null | any }) {
       if (!user || !account) return false;
 
       // Check if the user already exists
@@ -31,7 +32,6 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
             image: user.image,
 
             accounts: {
-              // @ts-expect-error
               create: {
                 type: account.type,
                 provider: account.provider,
@@ -42,7 +42,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
                 tokenType: account.token_type,
                 scope: account.scope,
                 idToken: account.id_token,
-                sessionState: account.session_state,
+                sessionState: account.session_state as string | undefined,
               },
             },
           },
@@ -74,8 +74,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
               tokenType: account.token_type,
               scope: account.scope,
               idToken: account.id_token,
-              // @ts-expect-error
-              sessionState: account.session_state,
+              sessionState: account.session_state as string | undefined,
             },
           });
         } else {
@@ -88,8 +87,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
               expiresAt: account.expires_at,
               scope: account.scope,
               idToken: account.id_token,
-              // @ts-expect-error
-              sessionState: account.session_state,
+              sessionState: account.session_state as string | undefined,
             }
           });
         }
@@ -98,7 +96,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
       return true;
     },
 
-    async jwt({ token,user: _user, account: _account }) {
+    async jwt({ token, user: _user, account: _account }: { token: JWT | any, user: User | any, account: Account | null | any }) {
       if (!token.sub) return token;
 
       // Optimization: If token already has role and picture, skip DB call
@@ -119,7 +117,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
       return token;
     },
 
-    async session({ session, token }) {
+    async session({ session, token }: { session: Session | any, token: JWT | any }) {
       // Attach the user ID from the token to the session
       if (token.sub && session.user) {
         session.user.id = token.sub
