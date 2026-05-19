@@ -20,17 +20,31 @@ interface WebContainerDirectory {
 
 type WebContainerFileSystem = Record<string, WebContainerFile | WebContainerDirectory>;
 
+/**
+ * Determine the filesystem key for a TemplateItem.
+ *
+ * Folders are identified by the presence of both `folderName` and `items`.
+ * Everything else is treated as a file — including extension-less files such
+ * as `README` or `Makefile` where `fileExtension` is an empty string.
+ */
+function itemKey(item: TemplateItem): string {
+  if ('folderName' in item && item.folderName && 'items' in item && item.items) {
+    return item.folderName;
+  }
+  // File: append the extension only when it is a non-empty string.
+  return item.fileExtension
+    ? `${item.filename}.${item.fileExtension}`
+    : item.filename;
+}
+
 export function transformToWebContainerFormat(template: { folderName: string; items: TemplateItem[] }): WebContainerFileSystem {
   function processItem(item: TemplateItem): WebContainerFile | WebContainerDirectory {
-    if (item.folderName && item.items) {
+    if ('folderName' in item && item.folderName && 'items' in item && item.items) {
       // This is a directory
       const directoryContents: WebContainerFileSystem = {};
       
       item.items.forEach(subItem => {
-        const key = subItem.fileExtension 
-          ? `${subItem.filename}.${subItem.fileExtension}`
-          : subItem.folderName!;
-        directoryContents[key] = processItem(subItem);
+        directoryContents[itemKey(subItem)] = processItem(subItem);
       });
 
       return {
@@ -49,10 +63,7 @@ export function transformToWebContainerFormat(template: { folderName: string; it
   const result: WebContainerFileSystem = {};
   
   template.items.forEach(item => {
-    const key = item.fileExtension 
-      ? `${item.filename}.${item.fileExtension}`
-      : item.folderName!;
-    result[key] = processItem(item);
+    result[itemKey(item)] = processItem(item);
   });
 
   return result;
